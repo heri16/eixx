@@ -51,9 +51,10 @@ ref<Alloc>::ref(const char* buf, uintptr_t& idx, [[maybe_unused]] size_t size, c
             if (count > COUNT)
                 throw err_decode_exception("Error decoding ref's count", idx+1, count);
 
-            int len = atom::get_len(s);
-            if (len < 0)
-                throw err_decode_exception("Error decoding ref's atom", idx+3, len);
+            uint8_t atom_tag = get8(s);
+            size_t  len = atom::decode_size(s, atom_tag);
+            if (len == 0)
+                throw err_decode_exception("Error decoding ref's node", idx+3, len);
             detail::check_node_length(len);
             atom nd(s, len);
             s += len;
@@ -74,9 +75,10 @@ ref<Alloc>::ref(const char* buf, uintptr_t& idx, [[maybe_unused]] size_t size, c
         }
 #endif
         case ERL_REFERENCE_EXT: {
-            int len = atom::get_len(s);
-            if (len < 0)
-                throw err_decode_exception("Error decoding ref's atom", idx+3, len);
+            uint8_t atom_tag = get8(s);
+            size_t  len = atom::decode_size(s, atom_tag);
+            if (len == 0)
+                throw err_decode_exception("Error decoding ref's node", idx+1, len);
             detail::check_node_length(len);
             atom nd(s, len);
             s += len;

@@ -48,8 +48,9 @@ port<Alloc>::port(const char *buf, uintptr_t& idx, [[maybe_unused]] size_t size,
         )
         throw err_decode_exception("Error decoding port's type", idx, tag);
 
-    int len = atom::get_len(s);
-    if (len < 0)
+    uint8_t atom_tag = get8(s);
+    size_t  len = atom::decode_size(s, atom_tag);
+    if (len == 0)
         throw err_decode_exception("Error decoding port's node", idx, len);
     detail::check_node_length(len);
     atom l_node(s, len);

@@ -80,6 +80,23 @@ public:
        return null;
     }
 
+    /// Get the size of a buffer needed to decode this atom
+    inline static size_t decode_size(const char*& s, const uint8_t tag) {
+        switch (tag) {
+#ifdef ERL_SMALL_ATOM_UTF8_EXT
+            case ERL_SMALL_ATOM_UTF8_EXT: return get8(s);
+#endif
+#ifdef ERL_ATOM_UTF8_EXT
+            case ERL_ATOM_UTF8_EXT:       return get16be(s);
+#endif
+#ifdef ERL_SMALL_ATOM_EXT
+            case ERL_SMALL_ATOM_EXT:      return get8(s);
+#endif
+            case ERL_ATOM_EXT:            return get16be(s);
+            default:                      return 0;
+        }
+    }
+
     /// Create an empty atom
     atom() : m_index(0) {
         static_assert(sizeof(atom) == 4, "Invalid atom size!");
@@ -111,25 +128,6 @@ public:
     /// @copydoc atom::create
     static atom create(const char* s, bool existing) {
         return create(std::string(s), existing);
-    }
-
-    /// Get atom length from a binary buffer encoded in 
-    /// Erlang external binary format.
-    static int get_len(const char*& s) {
-        switch (get8(s)) {
-#ifdef ERL_SMALL_ATOM_UTF8_EXT
-            case ERL_SMALL_ATOM_UTF8_EXT: return get8(s);
-#endif
-#ifdef ERL_ATOM_UTF8_EXT
-            case ERL_ATOM_UTF8_EXT:       return get16be(s);
-#endif
-#ifdef ERL_SMALL_ATOM_EXT
-            case ERL_SMALL_ATOM_EXT:      return get8(s);
-#endif
-            case ERL_ATOM_EXT:            return get16be(s);
-            default:
-                return -1;
-        }
     }
 
     /// @copydoc atom::atom
@@ -174,9 +172,8 @@ public:
     {
         const char *s = a_buf + idx;
         const char *s0 = s;
-        int len = get_len(s);
-        if (len < 0)
-            throw err_decode_exception("Error decoding atom", idx);
+        uint8_t tag = get8(s);
+        size_t  len = decode_size(s, tag);
         m_index = atom_table().lookup(std::string(s, len));
         idx += s + len - s0;
         BOOST_ASSERT((size_t)idx <= a_size);

@@ -45,9 +45,10 @@ void epid<Alloc>::decode(const char *buf, uintptr_t& idx, [[maybe_unused]] size_
         )
         throw err_decode_exception("Error decoding pid's type", idx, tag);
 
-    int len = atom::get_len(s);
-    if (len < 0)
-        throw err_decode_exception("Error decoding pid node", idx, len);
+    uint8_t atom_tag = get8(s);
+    size_t  len = atom::decode_size(s, atom_tag);
+    if (len == 0) 
+        throw err_decode_exception("Error decoding pid's node", idx, len);
     detail::check_node_length(len);
 
     atom l_node(s, len);
